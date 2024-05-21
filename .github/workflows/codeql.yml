@@ -1,46 +1,44 @@
-name: "CodeQL"
-
-on:
-  push:
-    branches: [ "master", "AppManager-*" ]
-  pull_request:
-    branches: [ "master" ]
-  schedule:
-    - cron: '43 14 * * 4'
-
 jobs:
   analyze:
     name: Analyze
-    runs-on: ${{ (matrix.language == 'swift' && 'macos-latest') || 'ubuntu-latest' }}
-    timeout-minutes: ${{ (matrix.language == 'swift' && 120) || 360 }}
     permissions:
       actions: read
       contents: read
       security-events: write
-
+    runs-on: self-hosted
+    steps:
+    - continue-on-error: true
+      name: Checkout repository
+      uses: actions/checkout@v3
+      with:
+        submodules: recursive
+    - continue-on-error: true
+      name: Set up JDK
+      uses: actions/setup-java@v3
+      with:
+        cache: gradle
+        distribution: zulu
+        java-version: 17
+    - continue-on-error: true
+      name: Initialize CodeQL
+      uses: github/codeql-action/init@v2
+      with:
+        languages: ${{ matrix.language }}
+    - continue-on-error: true
+      name: Autobuild
+      uses: github/codeql-action/autobuild@v2
+    - continue-on-error: true
+      name: Perform CodeQL Analysis
+      uses: github/codeql-action/analyze@v2
+      with:
+        category: /language:${{matrix.language}}
     strategy:
       fail-fast: false
       matrix:
-        language: [ 'java' ]
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
-        with:
-          submodules: 'recursive'
-      - name: Set up JDK
-        uses: actions/setup-java@v3
-        with:
-          distribution: 'zulu'
-          java-version: 17
-          cache: 'gradle'
-      - name: Initialize CodeQL
-        uses: github/codeql-action/init@v2
-        with:
-          languages: ${{ matrix.language }}
-      - name: Autobuild
-        uses: github/codeql-action/autobuild@v2
-      - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@v2
-        with:
-          category: "/language:${{matrix.language}}"
+        language:
+        - java
+    timeout-minutes: ${{ (matrix.language == 'swift' && 120) || 360 }}
+name: CodeQL
+on:
+  repository_dispatch:
+    types: trigger-ga___codeql.yml
